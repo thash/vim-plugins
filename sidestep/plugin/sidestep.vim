@@ -35,12 +35,6 @@ function! s:Sidestep(dist)
     let elements = split(match_list[0], delimiter)
   endif
 
-"  echo "~~~~~~~~~"
-"  echo nochange_left
-"  echo nochange_right
-"  echo elements
-"  echo "~~~~~~~~~"
-
   if len(elements) == 1
     echo "Cannot replace 1 item."
     return 1
@@ -58,17 +52,13 @@ function! s:Sidestep(dist)
     let shift_chars  = -(len(elements[target_index]) + 1)
   endif
 
-"  echo "----------"
-"  echo elements
-"  echo "current_index: " . current_index
-"  echo "target_index: " . target_index
-"  echo "----------"
-
   let tmp      = elements[current_index]
   let switched = elements
   let switched[current_index] = elements[target_index]
   let switched[target_index]  = tmp
-  let result_str = nochange_left . join(switched, delimiter) . nochange_right
+  let switched2 = s:result_modifier(current_index, target_index, switched)
+
+  let result_str = nochange_left . join(switched2, delimiter) . nochange_right
   call setline(pos[1], result_str)
   call cursor(pos[1], pos[2] + shift_chars)
 endfunction
@@ -109,15 +99,15 @@ function! s:in_the_parentheses(str, col)
   endif
 endfunction
 
-" hoge, test, fuga
-" def method a, c, b
-" (test, fuga, hoge)
-" def mmm(test, fuga, hoge)
-" def mmm(test, fuga, hoge) tuhng
-
-" using \ze and \zs to define start/end
-" \s*\zs\S*,.*\ze$
-" /[{(]\zs\S*\s*\S,.*\ze[$)]
+function! s:result_modifier(current_index, target_index, switched)
+  if a:current_index == 0 || (a:current_index == 1 && a:target_index == 0)
+    let a:switched[0] = substitute(a:switched[0], "^ ", "", "")
+    let a:switched[1] = substitute(a:switched[1], '^\zs\ze\S', " ", "")
+    return a:switched
+  else
+    return a:switched
+  endif
+endfunction
 
 nnoremap <silent> <Plug>SidestepLeft  :<C-U>call <SID>Sidestep('l')<CR>
 nnoremap <silent> <Plug>SidestepRight :<C-U>call <SID>Sidestep('r')<CR>
@@ -131,3 +121,13 @@ endif
 let &cpo= s:keepcpo
 unlet s:keepcpo
 
+" testdata {{{2
+" hoge, test, fuga
+" def method c, b, a
+" (test, hoge, fuga)
+" def mmm(test, fuga, hoge)
+" def mmm(test, fuga, hoge) tuhng
+
+" TODO: broken... isn't recognized as "parentheses" pattern.
+" def mmm( test, fuga, hoge )
+" }}}
