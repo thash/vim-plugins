@@ -18,14 +18,35 @@ function! s:Sidestep(dist)
   endif
   let pos = getpos('.')
   let delimiter = ','
-  let elements = split(getline('.'), delimiter)
+
+  if s:in_the_parentheses(getline('.'), pos[2])
+    let match_list = matchlist(getline('.'), '\(.\{-}(\)\zs\S*,.*\ze\().*\)')
+  else
+    let match_list = matchlist(getline('.'), '\(.\{-}\)\zs\S*,.*')
+  endif
+
+  if len(match_list) == 0
+    let nochange_left = ""
+    let nochange_right = ""
+    let elements = split(getline('.'), delimiter)
+  else
+    let nochange_left = match_list[1]
+    let nochange_right = match_list[2]
+    let elements = split(match_list[0], delimiter)
+  endif
+
+"  echo "~~~~~~~~~"
+"  echo nochange_left
+"  echo nochange_right
+"  echo elements
+"  echo "~~~~~~~~~"
 
   if len(elements) == 1
     echo "Cannot replace 1 item."
     return 1
   end
 
-  let current_index = s:whichpart(elements, pos[2])
+  let current_index = s:whichpart(elements, pos[2] - len(nochange_left))
 
   if a:dist == 'r'
     let target_index = min([current_index + 1, len(elements) - 1])
@@ -36,10 +57,6 @@ function! s:Sidestep(dist)
     call s:check_range(target_index, current_index)
     let shift_chars  = -(len(elements[target_index]) + 1)
   endif
-
-  " TODO: detect () and move elements in ()
-  let nochange_left = ""
-  let nochange_right = ""
 
 "  echo "----------"
 "  echo elements
@@ -75,16 +92,32 @@ function! s:check_range(target_index, current_index)
   end
 endfunction
 
-" TODO: how to extract this part by regular expression?
-" [hoge, test, fuga]
+
+function! s:in_the_parentheses(str, col)
+  " TODO: case when there're multiple parentheses.
+  let index_s = match(getline('.'), '(.*)')
+  let index_e = matchend(getline('.'), '(.*)')
+  if index_s == -1
+    return 0
+  else
+    if (index_s + 1) < a:col && a:col < index_e
+      return 1
+    else
+      return 0
+    end
+    return 1
+  endif
+endfunction
 
 " hoge, test, fuga
-" def method hoge, test, fuga
+" def method a, c, b
 " (test, fuga, hoge)
+" def mmm(test, fuga, hoge)
+" def mmm(test, fuga, hoge) tuhng
 
+" using \ze and \zs to define start/end
 " \s*\zs\S*,.*\ze$
-
-" foobar
+" /[{(]\zs\S*\s*\S,.*\ze[$)]
 
 nnoremap <silent> <Plug>SidestepLeft  :<C-U>call <SID>Sidestep('l')<CR>
 nnoremap <silent> <Plug>SidestepRight :<C-U>call <SID>Sidestep('r')<CR>
