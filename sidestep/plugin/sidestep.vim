@@ -121,13 +121,3 @@ endif
 let &cpo= s:keepcpo
 unlet s:keepcpo
 
-" testdata {{{2
-" hoge, test, fuga
-" def method c, b, a
-" (test, hoge, fuga)
-" def mmm(test, fuga, hoge)
-" def mmm(test, fuga, hoge) tuhng
-
-" TODO: broken... isn't recognized as "parentheses" pattern.
-" def mmm( test, fuga, hoge )
-" }}}
