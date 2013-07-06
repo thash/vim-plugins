@@ -2,3 +2,4 @@
 .bundle
 *.in
 *.out
+*.swp
